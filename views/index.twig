@@ -1,0 +1,63 @@
+{% extends 'layout.twig' %}
+
+{% block body %}
+<div class="flex justify-center items-center min-h-screen">
+    <div class="bg-gray-800 p-6 rounded-lg shadow-lg w-full max-w-lg">
+        <h1 class="text-2xl font-bold mb-4 text-center">Vehicle Wash Form</h1>
+        <form action="/submit" method="post" class="space-y-4">
+            <div>
+                <label for="vehicle_name" class="block text-gray-300">Vehicle Name:</label>
+                <input type="text" id="vehicle_name" name="vehicle_name" required class="w-full p-2 mt-1 border border-gray-600 rounded bg-gray-700 text-gray-200">
+            </div>
+
+            <div>
+                <label for="driver_name" class="block text-gray-300">Driver Name:</label>
+                <input type="text" id="driver_name" name="driver_name" required class="w-full p-2 mt-1 border border-gray-600 rounded bg-gray-700 text-gray-200">
+            </div>
+
+            <div>
+                <label for="wash_date" class="block text-gray-300">Date:</label>
+                <input type="date" id="wash_date" name="wash_date" required class="w-full p-2 mt-1 border border-gray-600 rounded bg-gray-700 text-gray-200" onchange="fetchAvailableHours()">
+            </div>
+
+            <div>
+                <label for="wash_time" class="block text-gray-300">Time:</label>
+                <select id="wash_time" name="wash_time" required class="w-full p-2 mt-1 border border-gray-600 rounded bg-gray-700 text-gray-200">
+                    <option value="">Select Time</option>
+                    <!-- Options will be populated here by JavaScript -->
+                </select>
+            </div>
+
+            <div class="text-center">
+                <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Submit</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function fetchAvailableHours() {
+        const date = document.getElementById('wash_date').value;
+        if (!date) return;
+
+        fetch(`/available-hours?date=${date}`)
+            .then(response => response.json())
+            .then(data => {
+                const select = document.getElementById('wash_time');
+                select.innerHTML = '<option value="">Select Time</option>'; // Reset options
+
+                // Populate available hours
+                for (let hour = 8; hour <= 18; hour++) { // Assuming hours from 08:00 to 18:00
+                    const hourStr = hour.toString().padStart(2, '0') + ':00';
+                    const option = document.createElement('option');
+                    option.value = hourStr;
+                    option.textContent = hourStr;
+                    
+                    if (!data.includes(hourStr)) {
+                        select.appendChild(option);
+                    }
+                }
+            });
+    }
+</script>
+{% endblock %}
