@@ -3,61 +3,201 @@
 {% block body %}
 <div class="flex justify-center items-center min-h-screen">
     <div class="bg-gray-800 p-6 rounded-lg shadow-lg w-full max-w-lg">
-        <h1 class="text-2xl font-bold mb-4 text-center">Vehicle Wash Form</h1>
-        <form action="/submit" method="post" class="space-y-4">
+        <h1 class="text-2xl font-bold mb-4 text-center">Formulaire de Lavage de Véhicule</h1>
+        <form id="vehicleWashForm" action="/submit" method="post" class="space-y-4">
             <div>
-                <label for="vehicle_name" class="block text-gray-300">Vehicle Name:</label>
+                <label for="vehicle_name" class="block text-gray-300">Nom du Véhicule :</label>
                 <input type="text" id="vehicle_name" name="vehicle_name" required class="w-full p-2 mt-1 border border-gray-600 rounded bg-gray-700 text-gray-200">
             </div>
 
             <div>
-                <label for="driver_name" class="block text-gray-300">Driver Name:</label>
+                <label for="driver_name" class="block text-gray-300">Nom du Conducteur :</label>
                 <input type="text" id="driver_name" name="driver_name" required class="w-full p-2 mt-1 border border-gray-600 rounded bg-gray-700 text-gray-200">
             </div>
 
             <div>
-                <label for="wash_date" class="block text-gray-300">Date:</label>
-                <input type="date" id="wash_date" name="wash_date" required class="w-full p-2 mt-1 border border-gray-600 rounded bg-gray-700 text-gray-200" onchange="fetchAvailableHours()">
+                <label for="number_of_units" class="block text-gray-300">Nombre du Conducteur  :</label>
+                <input type="number" id="number_of_units" name="number_of_units" required class="w-full p-2 mt-1 border border-gray-600 rounded bg-gray-700 text-gray-200">
             </div>
 
             <div>
-                <label for="wash_time" class="block text-gray-300">Time:</label>
-                <select id="wash_time" name="wash_time" required class="w-full p-2 mt-1 border border-gray-600 rounded bg-gray-700 text-gray-200">
-                    <option value="">Select Time</option>
-                    <!-- Options will be populated here by JavaScript -->
+                <label for="vehicle_size" class="block text-gray-300">Taille du Véhicule :</label>
+                <select id="vehicle_size" name="vehicle_size" required class="w-full p-2 mt-1 border border-gray-600 rounded bg-gray-700 text-gray-200">
+                    <option value="">Sélectionner la Taille</option>
+                    <option value="citadine">Citadine</option>
+                    <option value="compacte">Compacte</option>
+                    <option value="break">Break</option>
                 </select>
             </div>
 
+            <div>
+                <label for="wash_type" class="block text-gray-300">Type de Lavage :</label>
+                <select id="wash_type" name="wash_type" required class="w-full p-2 mt-1 border border-gray-600 rounded bg-gray-700 text-gray-200" onchange="handleWashTypeChange()">
+                    <option value="">Sélectionner le Type de Lavage</option>
+                    <option value="rapide">Lavage Rapide</option>
+                    <option value="interieur">Intérieur Détaillé</option>
+                    <option value="polissage">Polissage</option>
+                </select>
+            </div>
+
+            <!-- Date field -->
+            <div id="dateField">
+                <label for="wash_date" class="block text-gray-300">Date :</label>
+                <input type="date" id="wash_date" name="wash_date" required class="w-full p-2 mt-1 border border-gray-600 rounded bg-gray-700 text-gray-200" onchange="fetchAvailableHours()">
+            </div>
+
+            <!-- Time selection, visible only for Lavage Rapide -->
+            <div id="timeField">
+                <label for="wash_time" class="block text-gray-300">Heure :</label>
+                <select id="wash_time" name="wash_time" class="w-full p-2 mt-1 border border-gray-600 rounded bg-gray-700 text-gray-200">
+                    <option value="">Sélectionner l'Heure</option>
+                    <!-- Les options seront ajoutées par JavaScript -->
+                </select>
+            </div>
+
+            <!-- Polissage options, visible only for Polissage -->
+            <div id="polishOptions" class="hidden">
+                <label for="polish_type" class="block text-gray-300">Type de Polissage :</label>
+                <div class="flex space-x-4 mt-1">
+                    <label class="text-gray-300">
+                        <input type="radio" name="polish_type" value="full" required> Polissage Complet
+                    </label>
+                    <label class="text-gray-300">
+                        <input type="radio" name="polish_type" value="par_piece" required> Polissage par Pièce
+                    </label>
+                </div>
+            </div>
+
+            <!-- Number of pieces input for Polissage par Pièce -->
+            <div id="piecesInput" class="hidden">
+                <label for="number_of_pieces" class="block text-gray-300">Nombre de Pièces :</label>
+                <input type="number" id="number_of_pieces" name="number_of_pieces" min="1" class="w-full p-2 mt-1 border border-gray-600 rounded bg-gray-700 text-gray-200">
+            </div>
+
+            <!-- Hidden field to store the calculated price -->
+            <input type="hidden" id="calculated_price" name="calculated_price" value="0">
+
+            <!-- Price display -->
+            <div class="text-gray-300 text-center mt-4">
+                <p id="priceDisplay">Prix Total : 0TND</p>
+            </div>
+
             <div class="text-center">
-                <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Submit</button>
+                <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Soumettre</button>
             </div>
         </form>
     </div>
 </div>
 
 <script>
+    function handleWashTypeChange() {
+    const washType = document.getElementById('wash_type').value;
+    const timeField = document.getElementById('timeField');
+    const polishOptions = document.getElementById('polishOptions');
+    const piecesInput = document.getElementById('piecesInput');
+    const polishRadios = document.querySelectorAll('input[name="polish_type"]');
+
+    if (washType === 'rapide') {
+        timeField.classList.remove('hidden');
+        polishOptions.classList.add('hidden');
+        piecesInput.classList.add('hidden');
+        polishRadios.forEach(radio => radio.removeAttribute('required'));  // Remove required attribute
+    } else if (washType === 'interieur') {
+        timeField.classList.add('hidden');
+        polishOptions.classList.add('hidden');
+        piecesInput.classList.add('hidden');
+        polishRadios.forEach(radio => radio.removeAttribute('required'));  // Remove required attribute
+    } else if (washType === 'polissage') {
+        timeField.classList.add('hidden');
+        polishOptions.classList.remove('hidden');
+        polishRadios.forEach(radio => radio.setAttribute('required', ''));  // Add required attribute
+    }
+    calculatePrice();  // Recalculate price after wash type selection
+}
+
+
+    document.querySelectorAll('input[name="polish_type"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            const piecesInput = document.getElementById('piecesInput');
+            if (this.value === 'par_piece') {
+                piecesInput.classList.remove('hidden');
+            } else {
+                piecesInput.classList.add('hidden');
+            }
+            calculatePrice();  // Calculate price after polish type selection
+        });
+    });
+
+    document.getElementById('vehicle_size').addEventListener('change', calculatePrice);
+    document.getElementById('wash_type').addEventListener('change', calculatePrice);
+    document.getElementById('number_of_pieces').addEventListener('input', calculatePrice);
+
+    function calculatePrice() {
+        let price = 0;
+        const vehicleSize = document.getElementById('vehicle_size').value;
+        const washType = document.getElementById('wash_type').value;
+        const polishType = document.querySelector('input[name="polish_type"]:checked');
+        const numberOfPieces = document.getElementById('number_of_pieces').value || 0;
+
+        // Prices based on vehicle size
+        if (washType === 'rapide') {
+            if (vehicleSize === 'citadine') price += 12;
+            else if (vehicleSize === 'compacte') price += 15;
+            else if (vehicleSize === 'break') price += 20;
+        }
+
+        // Interior wash price
+        if (washType === 'interieur') {
+            price += 120;
+        }
+
+        // Polishing price
+        if (washType === 'polissage') {
+            if (polishType && polishType.value === 'full') {
+                price += 150;
+            } else if (polishType && polishType.value === 'par_piece') {
+                price += numberOfPieces * 10;
+            }
+        }
+
+        // Update price in form and display
+        document.getElementById('calculated_price').value = price;
+        document.getElementById('priceDisplay').textContent = 'Prix Total : ' + price + 'TND';
+    }
+
+    document.getElementById('vehicleWashForm').addEventListener('submit', function(event) {
+        const confirmSubmission = confirm('Êtes-vous sûr de vouloir soumettre le formulaire ?');
+        if (!confirmSubmission) {
+            event.preventDefault();
+        }
+    });
     function fetchAvailableHours() {
-        const date = document.getElementById('wash_date').value;
-        if (!date) return;
+    const date = document.getElementById('wash_date').value;
+    if (!date) return;
 
-        fetch(`/available-hours?date=${date}`)
-            .then(response => response.json())
-            .then(data => {
-                const select = document.getElementById('wash_time');
-                select.innerHTML = '<option value="">Select Time</option>'; // Reset options
+    fetch(`/available-hours?date=${date}`)
+        .then(response => response.json())
+        .then(data => {
+            const select = document.getElementById('wash_time');
+            select.innerHTML = '<option value="">Select Time</option>'; // Reset options
 
-                // Populate available hours
-                for (let hour = 8; hour <= 18; hour++) { // Assuming hours from 08:00 to 18:00
-                    const hourStr = hour.toString().padStart(2, '0') + ':00';
+            // Populate available hours in 30-minute increments from 08:00 to 22:00
+            for (let hour = 8; hour < 22; hour++) {
+                for (let minutes = 0; minutes < 60; minutes += 30) {
+                    const hourStr = hour.toString().padStart(2, '0');
+                    const minuteStr = minutes.toString().padStart(2, '0');
+                    const timeStr = `${hourStr}:${minuteStr}`;
                     const option = document.createElement('option');
-                    option.value = hourStr;
-                    option.textContent = hourStr;
-                    
-                    if (!data.includes(hourStr)) {
+                    option.value = timeStr;
+                    option.textContent = timeStr;
+
+                    if (!data.includes(timeStr)) {
                         select.appendChild(option);
                     }
                 }
-            });
-    }
+            }
+        });
+}
+
 </script>
 {% endblock %}

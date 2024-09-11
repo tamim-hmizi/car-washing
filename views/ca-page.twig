@@ -1,0 +1,50 @@
+{% extends 'layout.twig' %}
+
+{% block body %}
+   <div class="flex flex-col items-center space-y-4">
+  <h1 class="text-xl font-bold">Vue d'ensemble du chiffre d'affaires</h1>
+  <div id="daily-revenue" class="border border-gray-300 p-4 text-lg rounded-md">
+    Chiffre d'affaires d'aujourd'hui : 0.00TND
+  </div>
+  <div id="monthly-revenue" class="border border-gray-300 p-4 text-lg rounded-md">
+    Chiffre d'affaires du mois : 0.00TND
+  </div>
+</div>
+
+
+ 
+  <script >
+  document.addEventListener('DOMContentLoaded', () => {
+  // Récupérer les données des événements depuis l'API
+  fetch('/events')
+    .then(response => response.json())
+    .then(events => {
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+      let dailyRevenue = 0;
+      let monthlyRevenue = 0;
+
+      events.forEach(event => {
+        const eventDate = new Date(event.start);
+
+        if (eventDate.toDateString() === today.toDateString()) {
+          dailyRevenue += event.extendedProps.calculated_price;
+        }
+
+        if (eventDate >= startOfMonth) {
+          monthlyRevenue += event.extendedProps.calculated_price;
+        }
+      });
+
+      // Passer les données au modèle Twig ou mettre à jour directement le HTML
+      document.getElementById('daily-revenue').textContent = `Chiffre d'affaires d'aujourd'hui : $${dailyRevenue.toFixed(2)}`;
+      document.getElementById('monthly-revenue').textContent = `Chiffre d'affaires du mois : $${monthlyRevenue.toFixed(2)}`;
+    })
+    .catch(error => console.error('Erreur lors de la récupération des événements :', error));
+});
+
+</script>
+{% endblock %}
+

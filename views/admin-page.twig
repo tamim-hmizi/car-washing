@@ -2,34 +2,124 @@
 
 {% block body %}
   <div id='calendar'></div>
+  <!-- Modal -->
+  <div id="event-modal" class="modal">
+    <div class="modal-content bg-gray-900 text-gray-100">
+      <span id="close-modal-button" class="close-button">&times;</span>
+      <h2 id="modal-title"></h2>
+      <div id="modal-content"></div>
+      <button id="delete-event-button" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">Supprimer</button>
+    </div>
+  </div>
+
+  <style>
+    /* Styles du modal */
+    .modal {
+      display: none; 
+      position: fixed; 
+      z-index: 1; 
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto; 
+      background-color: rgba(0,0,0,0.4); 
+    }
+    .modal-content {
+      margin: 15% auto;
+      padding: 20px;
+      border: 1px solid #888;
+      width: 80%;
+    }
+    .close-button {
+      color: #aaa;
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+    }
+    .close-button:hover,
+    .close-button:focus {
+      color: white;
+      cursor: pointer;
+    }
+  </style>
+
   <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js'></script>
   <script>
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
       var calendarEl = document.getElementById('calendar');
       var calendar = new FullCalendar.Calendar(calendarEl, {
-        initialView: 'timeGridDay',
-        slotMinTime: '08:00:00', // Set minimum time to 8:00 am
-        slotMaxTime: '19:00:00', // Set maximum time to 6:00 pm
-        height: 'auto', // Adjust height dynamically
-        contentHeight: 'auto', // Adjust content height dynamically
+        initialView: 'timeGridWeek',
+        slotMinTime: '08:00:00',
+        slotMaxTime: '22:00:00',
+        height: 'auto',
+        contentHeight: 'auto',
         headerToolbar: {
           left: 'prev,next today',
           center: 'title',
           right: 'timeGridDay,timeGridWeek'
         },
         events: {
-          url: '/events', // Endpoint to fetch events
+          url: '/events',
           method: 'GET',
-          failure: function() {
-            alert('Failed to fetch events.');
+          failure: function () {
+            alert('Échec de la récupération des événements.');
           }
         },
-        eventClick: function(info) {
-          // Handle event click if needed
-          console.log(info.event);
+        eventClick: function (info) {
+          afficherModalEvenement(info.event);
         }
       });
       calendar.render();
     });
+
+    function afficherModalEvenement(event) {
+      const modal = document.getElementById('event-modal');
+      const modalTitle = document.getElementById('modal-title');
+      const modalContent = document.getElementById('modal-content');
+      const deleteButton = document.getElementById('delete-event-button');
+      const closeModalButton = document.getElementById('close-modal-button');
+
+      modalTitle.textContent = event.title;
+      modalContent.innerHTML = `
+        <p><strong>Type :</strong> ${event.extendedProps.size}</p>
+        <p><strong>Nombre :</strong> ${event.extendedProps.number}</p>
+        <p><strong>Type de lavage :</strong> ${event.extendedProps.wash_type}</p>
+        <p><strong>Type de polissage :</strong> ${event.extendedProps.polish_type ?? 'N/A'}</p>
+        <p><strong>Nombre de pièces :</strong> ${event.extendedProps.number_of_pieces ?? 'N/A'}</p>
+        <p><strong>Prix calculé :</strong> ${event.extendedProps.calculated_price} TND</p>
+        <p><strong>Début :</strong> ${event.start.toLocaleString()}</p>
+        <p><strong>Fin :</strong> ${event.end ? event.end.toLocaleString() : 'N/A'}</p>
+      `;
+
+      deleteButton.onclick = () => {
+        supprimerEvenement(event.id);
+      };
+
+      closeModalButton.onclick = function () {
+        modal.style.display = 'none';
+      };
+
+      modal.style.display = 'block';
+    }
+
+    function supprimerEvenement(eventId) {
+      fetch(`/delete-event/${eventId}`, { method: 'DELETE' })
+        .then(response => {
+          if (response.ok) {
+            location.reload();
+          } else {
+            alert('Échec de la suppression de l\'événement.');
+          }
+        })
+        .catch(error => console.error('Erreur lors de la suppression de l\'événement :', error));
+    }
+
+    window.onclick = function (event) {
+      const modal = document.getElementById('event-modal');
+      if (event.target == modal) {
+        modal.style.display = 'none';
+      }
+    };
   </script>
 {% endblock %}
